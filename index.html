@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hello-Agents 答疑老师</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+    --txt:#e6e9ef; --dim:#8b93a7; --accent:#5b9dff; --accent2:#7c5cff;
+    --user:#243044; --ok:#3fb950; --warn:#d29922; --err:#f85149;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg); color:var(--txt); height:100vh; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  header{
+    padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel);
+    display:flex; align-items:center; gap:14px; flex-shrink:0;
+  }
+  .logo{
+    width:34px;height:34px;border-radius:9px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-size:17px;
+  }
+  .titles h1{font-size:15px;font-weight:600;letter-spacing:.3px}
+  .titles p{font-size:11.5px;color:var(--dim);margin-top:2px}
+  .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .pill{
+    font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--dim);cursor:pointer;transition:.15s;
+    display:flex;align-items:center;gap:6px;user-select:none;
+  }
+  .pill:hover{border-color:var(--accent);color:var(--txt)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+  .dot.on{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+  .dot.off{background:var(--err)}
+
+  main{flex:1;display:flex;min-height:0}
+
+  /* 左侧知识目录 */
+  aside{
+    width:290px;flex-shrink:0;border-right:1px solid var(--line);
+    background:var(--panel);overflow-y:auto;padding:14px 0;
+  }
+  aside::-webkit-scrollbar,.msgs::-webkit-scrollbar{width:7px}
+  aside::-webkit-scrollbar-thumb,.msgs::-webkit-scrollbar-thumb{
+    background:var(--line);border-radius:4px;
+  }
+  .sec-label{
+    font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;
+    padding:10px 18px 6px;font-weight:600;
+  }
+  .chap{
+    padding:8px 18px;font-size:12.5px;color:var(--dim);cursor:pointer;
+    display:flex;gap:9px;align-items:flex-start;transition:.13s;line-height:1.4;
+    border-left:2px solid transparent;
+  }
+  .chap:hover{background:var(--panel2);color:var(--txt)}
+  .chap.active{background:var(--panel2);color:var(--txt);border-left-color:var(--accent)}
+  .chap .num{
+    font-size:10.5px;color:var(--dim);background:var(--bg);padding:1px 6px;
+    border-radius:5px;flex-shrink:0;margin-top:1px;font-variant-numeric:tabular-nums;
+  }
+  .chap.active .num{background:var(--accent);color:#fff}
+
+  /* 右侧对话 */
+  .chat{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+  .msgs{flex:1;overflow-y:auto;padding:24px 30px;display:flex;flex-direction:column;gap:18px}
+  .msg{display:flex;gap:12px;max-width:840px;width:100%}
+  .msg.me{align-self:flex-end;flex-direction:row-reverse}
+  .avatar{
+    width:30px;height:30px;border-radius:8px;flex-shrink:0;font-size:14px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .msg.ai .avatar{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+  .msg.me .avatar{background:var(--user)}
+  .bubble{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:13px 17px;font-size:13.5px;line-height:1.72;overflow-wrap:break-word;
+    word-break:break-word;min-width:0;
+  }
+  .msg.me .bubble{background:var(--user);border-color:#2f3d55}
+  .bubble h3{font-size:14px;margin:14px 0 7px;color:var(--accent)}
+  .bubble h3:first-child{margin-top:0}
+  .bubble p{margin:7px 0}
+  .bubble ul,.bubble ol{margin:7px 0 7px 20px}
+  .bubble li{margin:4px 0}
+  .bubble strong{color:#fff;font-weight:600}
+  .bubble code{
+    background:#0a0c10;padding:2px 6px;border-radius:4px;font-size:12.3px;
+    font-family:"Cascadia Code",Consolas,monospace;color:#9ece6a;
+  }
+  .bubble pre{
+    background:#0a0c10;border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;margin:10px 0;overflow-x:auto;
+  }
+  .bubble pre code{background:none;padding:0;color:#c8d3e0;font-size:12.2px;line-height:1.6}
+  .bubble blockquote{
+    border-left:3px solid var(--accent);padding-left:12px;margin:9px 0;color:var(--dim);
+  }
+  .src{
+    display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--dim);
+    background:var(--bg);border:1px solid var(--line);border-radius:6px;
+    padding:3px 8px;margin:3px 5px 0 0;cursor:pointer;transition:.14s;
+  }
+  .src:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* 输入区 */
+  .input-area{border-top:1px solid var(--line);padding:16px 30px 20px;background:var(--panel)}
+  .quick{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+  .qchip{
+    font-size:11.5px;padding:5px 11px;border-radius:14px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--dim);cursor:pointer;transition:.13s;
+  }
+  .qchip:hover{border-color:var(--accent);color:var(--txt)}
+  .input-row{display:flex;gap:10px;align-items:flex-end}
+  textarea{
+    flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+    color:var(--txt);padding:12px 15px;font-size:13.5px;resize:none;
+    font-family:inherit;line-height:1.55;max-height:150px;min-height:46px;
+  }
+  textarea:focus{outline:none;border-color:var(--accent)}
+  textarea::placeholder{color:#5a6274}
+  button.send{
+    background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;
+    color:#fff;padding:13px 22px;border-radius:11px;font-size:13.5px;font-weight:600;
+    cursor:pointer;transition:.15s;flex-shrink:0;height:46px;
+  }
+  button.send:hover{filter:brightness(1.12)}
+  button.send:disabled{opacity:.4;cursor:not-allowed;filter:none}
+
+  /* 设置面板 */
+  .modal{
+    position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;
+    align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(3px);
+  }
+  .modal.show{display:flex}
+  .modal-box{
+    background:var(--panel);border:1px solid var(--line);border-radius:15px;
+    width:520px;max-width:92vw;max-height:88vh;overflow-y:auto;
+  }
+  .modal-hd{
+    padding:17px 22px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .modal-hd h2{font-size:15px;font-weight:600}
+  .x{cursor:pointer;color:var(--dim);font-size:20px;line-height:1;background:none;border:none}
+  .x:hover{color:var(--txt)}
+  .modal-bd{padding:20px 22px}
+  .field{margin-bottom:17px}
+  .field label{display:block;font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:500}
+  .field input,.field select{
+    width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+    color:var(--txt);padding:10px 13px;font-size:13px;font-family:inherit;
+  }
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+  .hint{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.5}
+  .modal-ft{padding:0 22px 22px;display:flex;gap:10px;justify-content:flex-end}
+  .btn2{
+    padding:10px 19px;border-radius:9px;font-size:13px;cursor:pointer;
+    border:1px solid var(--line);background:var(--panel2);color:var(--txt);
+  }
+  .btn2:hover{border-color:var(--accent)}
+  .btn2.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-weight:600}
+
+  .typing{display:inline-flex;gap:4px;padding:4px 0}
+  .typing span{
+    width:6px;height:6px;border-radius:50%;background:var(--dim);
+    animation:bl 1.3s infinite;
+  }
+  .typing span:nth-child(2){animation-delay:.18s}
+  .typing span:nth-child(3){animation-delay:.36s}
+  @keyframes bl{0%,60%,100%{opacity:.28}30%{opacity:1}}
+  .empty{
+    text-align:center;color:var(--dim);margin:auto;max-width:460px;padding:30px;
+  }
+  .empty h2{font-size:19px;color:var(--txt);margin-bottom:10px;font-weight:600}
+  .empty p{font-size:13px;line-height:1.75}
+  .err-box{
+    background:#2a1518;border:1px solid #5c2b30;color:#ff9c9c;
+    padding:11px 15px;border-radius:9px;font-size:12.5px;line-height:1.6;
+  }
+  .trunc-tip{
+    margin-top:10px;padding:6px 11px;border-radius:7px;
+    background:rgba(120,140,200,.10);border:1px dashed var(--line);
+    color:var(--muted);font-size:11.5px;display:inline-block;
+  }
+
+  /* 模型选择列表 */
+  .model-row{
+    padding:11px 14px;border:1px solid var(--line);border-radius:10px;
+    background:var(--panel2);margin-bottom:9px;cursor:pointer;transition:.14s;
+  }
+  .model-row:hover{border-color:var(--accent)}
+  .model-row.active{border-color:var(--accent);background:#1b2740}
+  .model-row.disabled{opacity:.45;cursor:not-allowed}
+  .model-row.disabled:hover{border-color:var(--line)}
+  .model-name{font-size:13px;font-weight:500}
+  .model-cap{font-size:11px;color:var(--dim);margin-top:3px}
+  .tag{
+    font-size:10px;padding:1.5px 7px;border-radius:5px;margin-left:6px;
+    vertical-align:middle;font-weight:600;
+  }
+  .tag-free{background:#12301c;color:#4ade80;border:1px solid #1f5b34}
+  .tag-paid{background:#2c2410;color:#e3b341;border:1px solid #5c4a1a}
+  .quota-bar{
+    font-size:11.5px;line-height:1.6;padding:10px 13px;border-radius:9px;
+    background:#1b2740;border:1px solid #2f4a7a;color:#9dc0f5;margin-bottom:13px;
+  }
+  .quota-bar.depleted{background:#2c2410;border-color:#5c4a1a;color:#e3b341}
+  .quota-bar strong{color:#fff}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🤖</div>
+  <div class="titles">
+    <h1>Hello-Agents 答疑老师</h1>
+    <p>基于《从零开始构建智能体》16 章知识库 · 内嵌专属答疑模型</p>
+  </div>
+  <div class="hdr-right">
+    <div class="pill" id="statusPill"><span class="dot" id="statusDot"></span><span id="statusTxt">未配置</span></div>
+    <div class="pill" id="cfgBtn">🎓 选择模型</div>
+  </div>
+</header>
+
+<main>
+  <aside id="sidebar"></aside>
+
+  <div class="chat">
+    <div class="msgs" id="msgs">
+      <div class="empty" id="emptyState">
+        <h2>你好，我是你的 Agent 答疑老师 👋</h2>
+        <p>我内置了《从零开始构建智能体》全 16 章的知识库，可以回答关于智能体原理、ReAct 范式、记忆系统、MCP 协议、Agentic-RL 等方面的任何问题。</p>
+        <p style="margin-top:14px">左边点选章节可以聚焦提问，也可以直接在下面输入。<strong>无需配置任何 API Key</strong>，打开就能用。</p>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="quick" id="quick"></div>
+      <div class="input-row">
+        <textarea id="input" rows="1" placeholder="问点什么… 比如「ReAct 和 Plan-and-Solve 有什么区别？」（Enter 发送，Shift+Enter 换行）"></textarea>
+        <button class="send" id="sendBtn">发送</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- 模型选择弹窗 -->
+<div class="modal" id="cfgModal">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h2>🎓 答疑模型</h2>
+      <button class="x" id="cfgClose">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="hint" style="margin-bottom:14px">
+        已接入免费云服务，<strong>无需填写任何 API Key</strong>，选一个模型即可开始提问。
+      </div>
+      <div id="modelList"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn2 primary" id="cfgClose2">好了</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script>
+// ============ 云服务配置（免密钥） ============
+const PUBLIC_CONFIG = {
+  endpoint: 'https://agent-tutor.app.workbuddy.host',
+  oauthRelayBaseUrl: 'https://www.workbuddy.cn/v2/as/genie-baas/oauth',
+  publishableKey: 'wbpk_u4Sl3bASY6xTnLP0rl8M6T_BJG1uy2J7UkLZdc4XeGee0XMMxgsv6jZ'
+};
+
+// ============ 状态 ============
+let cloud = null;
+let MODELS = [];
+let curModel = null;
+let KNOWLEDGE = null;
+let CURRENT_CHAP = null;
+let BUSY = false;
+let HISTORY = [];
+let CONV_ID = 'conv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+let ABORT = null;
+
+// ============ 额度策略 ============
+const PAID_LIMIT = 2;          // 付费模型累计可用次数
+const ANSWER_CHAR_LIMIT = 1000; // 回答字数上限
+const DEVICE_KEY_STORE = 'hat_device_key';
+const LOCAL_USED_STORE = 'hat_paid_used';
+
+let paidUsed = 0;              // 已用付费次数（云端为准，本地兜底）
+let forceFree = false;         // 是否已强制切免费
+
+// 取设备标识（首访生成，存本地）
+function deviceKey(){
+  let k = localStorage.getItem(DEVICE_KEY_STORE);
+  if(!k){
+    k = 'd_' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+    localStorage.setItem(DEVICE_KEY_STORE, k);
+  }
+  return k;
+}
+
+// 判断是否免费模型：credits 为 x0.00 或缺失都视为免费（缺字段按免费更省额度）
+function isFreeModel(m){
+  const c = m.credits;
+  if(c === undefined || c === null || c === '') return true;
+  const n = parseFloat(String(c).replace(/[^\d.]/g, ''));
+  return !Number.isFinite(n) || n === 0;
+}
+
+// 是否可用于对话（排除图像等非对话模型）
+function isChatModel(m){
+  const id = String(m.id || '').toLowerCase();
+  const name = String(m.name || '').toLowerCase();
+  if(id.includes('image') || name.includes('image')) return false;
+  return true;
+}
+
+// 取最便宜的付费模型 / 最佳的免费模型
+function pickCheapestPaid(){
+  const paid = MODELS.filter(m => isChatModel(m) && !isFreeModel(m));
+  if(!paid.length) return null;
+  return paid.sort((a,b)=>creditVal(a)-creditVal(b))[0];
+}
+// 已知在本套流式链路上不产出的路由型模型（实测 auto 返回空文本），黑名单排除
+const FREE_MODEL_BLACKLIST = ['auto', 'default-auto'];
+// 实测可用的免费模型，按偏好排序（优先 Reasoning 能力强的）
+const FREE_MODEL_PREFER = ['hy3', 'hunyuan-chat', 'hunyuan-turbos', 'deepseek'];
+
+function pickFreeModel(){
+  const free = MODELS.filter(m => isChatModel(m) && isFreeModel(m) && !isBlacklisted(m));
+  if(free.length){
+    // 1) 按实测偏好表选
+    for(const pref of FREE_MODEL_PREFER){
+      const hit = free.find(m => String(m.id).toLowerCase() === pref);
+      if(hit) return hit;
+    }
+    // 2) 退而取支持推理的
+    const withReason = free.find(m => m.supportsReasoning === true);
+    if(withReason) return withReason;
+    return free[0];
+  }
+  const sorted = [...MODELS].filter(m => isChatModel(m) && !isBlacklisted(m))
+                            .sort((a,b)=>creditVal(a)-creditVal(b));
+  return sorted[0] || null;
+}
+function isBlacklisted(m){
+  const id = String(m.id || '').toLowerCase();
+  return FREE_MODEL_BLACKLIST.includes(id);
+}
+function creditVal(m){
+  const n = parseFloat(String(m.credits ?? '').replace(/[^\d.]/g, ''));
+  return Number.isFinite(n) ? n : 99;
+}
+
+// ============ 工具 ============
+const $ = id => document.getElementById(id);
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// 轻量 Markdown 渲染
+function md(t){
+  let h = esc(t);
+  // 代码块
+  h = h.replace(/```(\w*)\n([\s\S]*?)```/g, (m,l,c)=>`<pre><code>${c.replace(/\n$/,'')}</code></pre>`);
+  h = h.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  h = h.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  h = h.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+  h = h.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+  h = h.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  // 列表
+  h = h.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+  h = h.replace(/(<li>[\s\S]*?<\/li>)(?!\s*<li>)/g, '<ul>$1</ul>');
+  h = h.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+  // 段落
+  h = h.split(/\n{2,}/).map(p=>{
+    p = p.trim();
+    if(!p) return '';
+    if(/^<(h3|ul|ol|pre|blockquote|li)/.test(p)) return p;
+    return '<p>'+p.replace(/\n/g,'<br>')+'</p>';
+  }).join('');
+  return h;
+}
+
+// ============ 知识检索 ============
+// 简单相关性打分：命中标题/术语/正文的词越多分越高
+function retrieve(query, topK=3){
+  if(!KNOWLEDGE) return [];
+  const q = query.toLowerCase();
+  // 中英文分词：中文按 2-gram，英文按单词
+  const tokens = new Set();
+  q.replace(/[a-z0-9_]+/g, w=>{ if(w.length>1) tokens.add(w); return ''; });
+  const zh = q.replace(/[^\u4e00-\u9fa5]/g,'');
+  for(let i=0;i<zh.length-1;i++) tokens.add(zh.slice(i,i+2));
+  for(let i=0;i<zh.length-2;i++) tokens.add(zh.slice(i,i+3));
+
+  const scored = KNOWLEDGE.chapters.map(c=>{
+    let score = 0;
+    const hay = {
+      title: (c.title+' '+c.part).toLowerCase(),
+      terms: c.key_terms.join(' ').toLowerCase(),
+      symbols: c.code_symbols.join(' ').toLowerCase(),
+      outline: c.outline.map(s=>s.title+' '+s.points.join(' ')).join(' ').toLowerCase(),
+      intro: c.intro.toLowerCase(),
+    };
+    for(const t of tokens){
+      if(!t) continue;
+      if(hay.title.includes(t)) score += 12;
+      if(hay.terms.includes(t)) score += 7;
+      if(hay.symbols.includes(t)) score += 5;
+      if(hay.outline.includes(t)) score += 3;
+      if(hay.intro.includes(t)) score += 1;
+    }
+    // 当前聚焦章节加权
+    if(CURRENT_CHAP && c.n === CURRENT_CHAP) score += 4;
+    return { chap:c, score };
+  }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score);
+
+  return scored.slice(0, topK);
+}
+
+// 拼装注入给模型的上下文
+function buildContext(chaps){
+  if(!chaps.length) return '（本次问题未匹配到特定章节，请基于你对智能体领域的通用理解回答，并说明这不是教程原文）';
+  return chaps.map(({chap:c})=>{
+    let s = `### 《${c.title}》（${c.part}）\n`;
+    if(c.intro) s += `章节概要：${c.intro}\n`;
+    if(c.outline.length){
+      s += '知识点大纲：\n';
+      for(const o of c.outline){
+        s += `- ${o.num} ${o.title}`;
+        if(o.points.length) s += `\n  要点：${o.points[0]}`;
+        s += '\n';
+      }
+    }
+    if(c.key_terms.length) s += `关键术语：${c.key_terms.slice(0,25).join('、')}\n`;
+    if(c.code_symbols.length) s += `涉及代码符号：${c.code_symbols.slice(0,25).join('、')}\n`;
+    return s;
+  }).join('\n---\n');
+}
+
+// ============ 系统提示词：答疑老师人格 ============
+function systemPrompt(ctx, chap){
+  const focus = chap ? `\n\n【当前学生正在看的章节】${chap.title}\n请优先结合这一章的内容作答。` : '';
+  return `你是一位专门讲授《从零开始构建智能体》(Hello-Agents) 的资深 Agent 答疑老师。你的学生正在通过这套 Datawhale 开源教程系统学习 AI Agent 开发。
+
+## 你的角色
+- 你精通智能体原理、ReAct/Plan-and-Solve/Reflection 经典范式、记忆与 RAG、上下文工程、MCP/A2A/ANP 协议、Agentic-RL 训练、多智能体协作。
+- 你的讲解风格：**先给结论，再讲原理，最后落到代码**。学生问概念就给比喻，问实现就给可运行思路。
+- 你会主动指出常见误区（比如"框架封装掩盖了循环逻辑""RAG 不等于记忆系统""MCP 不是模型能力而是接口规范"）。
+- 学生基础可能是初学者，但**不要过度简化**——该讲清 Transformer、注意力、对比学习这类底层就讲清。
+
+## 硬性规则
+1. 涉及教程内容时，**严格以提供的【教程知识库片段】为准**，不要编造章节里没有的细节。若某细节知识库里没有，明确说"教程这一章没有展开，以下是我的补充"。
+2. 回答中凡引用到具体章节，标注来源，格式为：\`[第X章]\`。
+3. 代码问题给 Python 示例，保持简洁可读，不要堆砌无关代码。
+4. 学生问"这个知识点在哪一章"时，直接给出章节号与标题。
+5. 不要说"作为一个AI"这类话，你就是在扮演一位具体的答疑老师。
+6. **回答长度硬性上限 1000 字**：概念题控制在 300-500 字，实现题最多写到 1000 字。
+   宁可精炼也不要凑长度，不确定要不要展开时选择不展开。超过 1000 字会被系统截断。
+
+## 当前对话的教程知识库片段
+${ctx}${focus}
+
+现在，请以这位答疑老师的身份回答学生的问题。`;
+}
+
+// ============ 渲染 ============
+const PARTS = ['智能体与语言模型基础','构建你的大语言模型智能体','高级知识扩展','综合案例进阶','毕业设计及未来展望'];
+const QUICK = [
+  'ReAct 和 Plan-and-Solve 有什么区别？',
+  '什么是 MCP 协议？和普通工具调用差在哪？',
+  '记忆系统和 RAG 是一回事吗？',
+  '零基础学 Agent，推荐什么顺序？',
+  'Agentic-RL 训练需要什么硬件？'
+];
+
+function renderSidebar(){
+  const sb = $('sidebar');
+  sb.innerHTML = '';
+  for(const part of PARTS){
+    const list = KNOWLEDGE.chapters.filter(c=>c.part===part);
+    if(!list.length) continue;
+    const lb = document.createElement('div');
+    lb.className = 'sec-label';
+    lb.textContent = part;
+    sb.appendChild(lb);
+    for(const c of list){
+      const d = document.createElement('div');
+      d.className = 'chap' + (CURRENT_CHAP===c.n ? ' active':'');
+      d.innerHTML = `<span class="num">${c.n}</span><span>${esc(c.title.replace(/^第.+?章\s*/,''))}</span>`;
+      d.title = c.title;
+      d.onclick = ()=>{
+        CURRENT_CHAP = (CURRENT_CHAP===c.n) ? null : c.n;
+        renderSidebar();
+        if(CURRENT_CHAP){
+          $('input').value = `请讲讲「${c.title}」，核心知识点和常见的理解误区是什么？`;
+          $('input').focus();
+        }
+      };
+      sb.appendChild(d);
+    }
+  }
+}
+
+function renderQuick(){
+  const q = $('quick');
+  q.innerHTML = '';
+  for(const t of QUICK){
+    const c = document.createElement('div');
+    c.className = 'qchip';
+    c.textContent = t;
+    c.onclick = ()=>{ $('input').value = t; $('input').focus(); autoGrow(); };
+    q.appendChild(c);
+  }
+}
+
+function addMsg(role, html, sources){
+  $('emptyState')?.remove();
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + (role==='user'?'me':'ai');
+  const av = document.createElement('div');
+  av.className = 'avatar';
+  av.textContent = role==='user'?'🧑':'🤖';
+  const bb = document.createElement('div');
+  bb.className = 'bubble';
+  bb.innerHTML = html;
+  if(sources && sources.length){
+    const sr = document.createElement('div');
+    sr.style.marginTop = '9px';
+    for(const s of sources){
+      const t = document.createElement('span');
+      t.className = 'src';
+      t.textContent = `📖 ${s.title}`;
+      sr.appendChild(t);
+    }
+    bb.appendChild(sr);
+  }
+  wrap.appendChild(av);
+  wrap.appendChild(bb);
+  $('msgs').appendChild(wrap);
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+  return bb;
+}
+
+// ============ 主流程 ============
+function setStatus(state, text){
+  const d = $('statusDot'), t = $('statusTxt');
+  d.className = 'dot ' + (state==='on'?'on':state==='err'?'off':'');
+  t.textContent = text;
+}
+
+async function send(){
+  const input = $('input');
+  const q = input.value.trim();
+  if(!q || BUSY) return;
+
+  if(!cloud || !curModel){
+    addMsg('ai', '<div class="err-box">⚠️ 模型还没就绪。请稍等几秒，或点右上角状态标签重试。</div>');
+    return;
+  }
+
+  BUSY = true;
+  $('sendBtn').disabled = true;
+  input.value = '';
+  autoGrow();
+
+  addMsg('user', esc(q).replace(/\n/g,'<br>'));
+
+  // 检索
+  const hits = retrieve(q, 3);
+  const ctx = buildContext(hits);
+  const chapObj = CURRENT_CHAP ? KNOWLEDGE.chapters.find(c=>c.n===CURRENT_CHAP) : null;
+  const sources = hits.map(h=>({ n:h.chap.n, title:`第${h.chap.n}章 ${h.chap.title.replace(/^第.+?章\s*/,'')}` }));
+
+  const bb = addMsg('ai', '<div class="typing"><span></span><span></span><span></span></div>');
+
+  // ===== 额度判定：付费模型先扣次数，用尽则静默切免费 =====
+  let useModel = curModel;
+  let chargedPaid = false;   // 本次是否扣了付费额度（失败时用于退还）
+  if(!isFreeModel(curModel)){
+    const ok = await tryConsumePaid();
+    if(ok){
+      chargedPaid = true;
+    }else{
+      const free = pickFreeModel();
+      if(free){
+        useModel = free;
+        curModel = free;
+        forceFree = true;
+        renderModelList();
+        updateQuotaBadge();
+      }
+    }
+  }
+  if(forceFree){
+    const free = pickFreeModel();
+    if(free){ useModel = free; if(useModel.id !== curModel?.id){ curModel = free; } }
+  }
+
+  HISTORY.push({role:'user', content:q});
+  // 只保留最近 6 轮，防止上下文过长
+  if(HISTORY.length > 12) HISTORY = HISTORY.slice(-12);
+
+  const messages = [
+    { role:'system', content: systemPrompt(ctx, chapObj) },
+    ...HISTORY
+  ];
+
+  ABORT = new AbortController();
+  let full = '';
+
+  try{
+    for await (const chunk of cloud.llm.chat.completions.create({
+      model: useModel.id,
+      messages,
+      stream: true,
+      temperature: 0.6,
+      max_tokens: 2000,          // 硬兜底：约合 1000+ 汉字，防止跑飞
+      signal: ABORT.signal,
+      conversationId: CONV_ID,
+    })){
+      const delta = chunk.choices?.[0]?.delta;
+      if(delta?.content){
+        // 流式硬截断：超过上限即停止累积（软截断，保留完整句子观感）
+        if(full.length >= ANSWER_CHAR_LIMIT + 200){
+          ABORT.abort();
+          break;
+        }
+        full += delta.content;
+        bb.innerHTML = md(full);
+        $('msgs').scrollTop = $('msgs').scrollHeight;
+      }
+    }
+
+    // 最终硬截断到 ANSWER_CHAR_LIMIT（优先在换行/句末收尾，避免切断半句话）
+    let truncated = false;
+    if(full.length > ANSWER_CHAR_LIMIT){
+      let cut = full.slice(0, ANSWER_CHAR_LIMIT);
+      const lastBreak = Math.max(cut.lastIndexOf('\n'), cut.lastIndexOf('。'), cut.lastIndexOf('！'), cut.lastIndexOf('？'));
+      if(lastBreak > ANSWER_CHAR_LIMIT * 0.6) cut = cut.slice(0, lastBreak + 1);
+      full = cut.trimEnd();
+      truncated = true;
+      bb.innerHTML = md(full);
+    }
+
+    if(!full){
+      bb.innerHTML = '<div class="err-box">模型返回了空内容，请换个问法或重试。</div>';
+      setStatus('err','无输出');
+    }else{
+      // 超长截断提示
+      if(truncated){
+        const tip = document.createElement('div');
+        tip.className = 'trunc-tip';
+        tip.textContent = '✂️ 回答已达 1000 字上限，如需展开请针对具体小节追问';
+        bb.appendChild(tip);
+      }
+      // 补来源标注
+      if(sources.length){
+        const sr = document.createElement('div');
+        sr.style.marginTop = '9px';
+        for(const s of sources){
+          const t = document.createElement('span');
+          t.className = 'src';
+          t.textContent = `📖 ${s.title}`;
+          t.onclick = ()=>{ CURRENT_CHAP = s.n; renderSidebar(); };
+          sr.appendChild(t);
+        }
+        bb.appendChild(sr);
+      }
+      HISTORY.push({role:'assistant', content:full});
+      setStatus('on', useModel.name || useModel.id);
+    }
+  }catch(error){
+    // 中途被截断（我们的主动 abort）不算失败
+    const aborted = error?.name === 'AbortError' || String(error?.message||'').includes('abort');
+    if(aborted && full){
+      // 已拿到内容，按成功处理
+      try{
+        // 同样做最终截断 + 提示
+        if(full.length > ANSWER_CHAR_LIMIT){
+          let cut = full.slice(0, ANSWER_CHAR_LIMIT);
+          const lb = Math.max(cut.lastIndexOf('\n'), cut.lastIndexOf('。'), cut.lastIndexOf('！'), cut.lastIndexOf('？'));
+          if(lb > ANSWER_CHAR_LIMIT * 0.6) cut = cut.slice(0, lb + 1);
+          full = cut.trimEnd();
+          bb.innerHTML = md(full);
+          const tip = document.createElement('div');
+          tip.className = 'trunc-tip';
+          tip.textContent = '✂️ 回答已达 1000 字上限，如需展开请针对具体小节追问';
+          bb.appendChild(tip);
+        }
+        if(sources.length){
+          const sr = document.createElement('div');
+          sr.style.marginTop = '9px';
+          for(const s of sources){
+            const t = document.createElement('span');
+            t.className = 'src';
+            t.textContent = `📖 ${s.title}`;
+            t.onclick = ()=>{ CURRENT_CHAP = s.n; renderSidebar(); };
+            sr.appendChild(t);
+          }
+          bb.appendChild(sr);
+        }
+      }catch(_){}
+      HISTORY.push({role:'assistant', content:full});
+      setStatus('on', useModel.name || useModel.id);
+    }else{
+      // 真正失败：退还本次扣掉的付费额度
+      if(chargedPaid) await refundPaid();
+      bb.innerHTML = `<div class="err-box">❌ ${esc(llmErrorText(error))}</div>`;
+      setStatus('err','出错了');
+    }
+  }finally{
+    BUSY = false;
+    ABORT = null;
+    $('sendBtn').disabled = false;
+    updateQuotaBadge();
+  }
+}
+
+// 消耗一次付费额度（云端记账，本地兜底）。返回 true 表示允许用付费模型
+async function tryConsumePaid(){
+  // 本地已超限，直接拒
+  if(paidUsed >= PAID_LIMIT){
+    localStorage.setItem(LOCAL_USED_STORE, String(paidUsed));
+    return false;
+  }
+  try{
+    const { data, error } = await cloud.database.rpc('bump_paid_usage', {
+      p_device: deviceKey(),
+      p_limit: PAID_LIMIT,
+    });
+    if(error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(row && typeof row.used_count === 'number'){
+      paidUsed = row.used_count;
+      localStorage.setItem(LOCAL_USED_STORE, String(paidUsed));
+      return row.allowed === true;
+    }
+  }catch(e){
+    // 云端不可用时按本地计数走：本地 +1，不阻断用户
+    console.warn('额度服务不可用，按本地计数', e);
+    paidUsed = Math.min(paidUsed + 1, PAID_LIMIT + 1);
+    localStorage.setItem(LOCAL_USED_STORE, String(paidUsed));
+    return paidUsed <= PAID_LIMIT;
+  }
+  paidUsed = Math.min(paidUsed + 1, PAID_LIMIT + 1);
+  localStorage.setItem(LOCAL_USED_STORE, String(paidUsed));
+  return paidUsed <= PAID_LIMIT;
+}
+
+// 退还一次付费额度（调用失败时用，保证用户不因报错白扣次数）
+async function refundPaid(){
+  if(paidUsed <= 0) return;
+  try{
+    const { data, error } = await cloud.database.rpc('refund_paid_usage', {
+      p_device: deviceKey(),
+    });
+    if(error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(row && typeof row.used_count === 'number'){
+      paidUsed = row.used_count;
+    }else if(paidUsed > 0){
+      paidUsed -= 1;
+    }
+  }catch(e){
+    console.warn('退还额度失败，按本地回退', e);
+    paidUsed = Math.max(0, paidUsed - 1);
+  }
+  localStorage.setItem(LOCAL_USED_STORE, String(paidUsed));
+  forceFree = paidUsed >= PAID_LIMIT ? forceFree : false;
+  updateQuotaBadge();
+  renderModelList();
+}
+
+// 状态栏额度提示
+function updateQuotaBadge(){
+  if(!paidUsed && paidUsed !== 0) return;
+  if(forceFree || paidUsed >= PAID_LIMIT){
+    setStatus('on', (curModel ? (curModel.name||curModel.id) : '免费模型'));
+  }
+}
+
+// 把云服务错误码翻译成给学生看的人话
+function llmErrorText(err){
+  const code = err?.error?.code || '';
+  const rid = err?.requestId ? `（请求号 ${err.requestId}）` : '';
+  if(code.startsWith('auth_'))   return '云服务凭证校验失败。如果这个页面是你打开的，请点右上角状态重试；如果是别人分享的链接，请联系分享者。' + rid;
+  if(code.startsWith('quota_')) {
+    if(code === 'quota_rate_limited') return '提问太频繁了，缓几秒再试。' + rid;
+    return '答疑额度已用完，请联系应用创建者。' + rid;
+  }
+  if(code.startsWith('request_')) return '请求参数有问题，换种问法试试。' + rid;
+  if(code.startsWith('gateway_') || code.startsWith('model_')) return '模型服务暂时不可用，点发送再试一次。' + rid;
+  if(code === 'gateway_stream_interrupted') return '回答中途断了（可能是网络波动），已保留上面的内容，重发即可继续。' + rid;
+  if(code.startsWith('internal_')) return '服务内部错误，请稍后重试。' + rid;
+  return (err?.message || '请求失败') + rid;
+}
+
+// ============ 设置面板 ============
+// ============ 模型选择面板 ============
+function openCfg(){
+  renderModelList();
+  $('cfgModal').classList.add('show');
+}
+function closeCfg(){ $('cfgModal').classList.remove('show'); }
+
+// 渲染可选模型列表
+function renderModelList(){
+  const box = $('modelList');
+  box.innerHTML = '';
+
+  // 额度状态条
+  const quota = document.createElement('div');
+  const left = Math.max(0, PAID_LIMIT - paidUsed);
+  quota.className = 'quota-bar' + (left === 0 ? ' depleted' : '');
+  quota.innerHTML = left > 0
+    ? `💰 付费模型剩余 <strong>${left}</strong> 次（共 ${PAID_LIMIT} 次）—— 用完后自动切换到免费模型`
+    : `🔁 付费额度已用完，已切换到免费模型，问答不受影响`;
+  box.appendChild(quota);
+
+  if(!MODELS.length){
+    box.innerHTML += '<div class="hint">没有可选模型，请稍后重试或联系应用创建者。</div>';
+    return;
+  }
+  for(const m of MODELS){
+    const usable = m.disabled !== true;
+    const free = isFreeModel(m);
+    const row = document.createElement('div');
+    row.className = 'model-row' + (usable ? '' : ' disabled');
+    const caps = [];
+    if(m.supportsReasoning === true) caps.push('推理');
+    if(m.supportsImages === true) caps.push('读图');
+    if(m.supportsToolCall === true) caps.push('工具');
+    const tag = free
+      ? '<span class="tag tag-free">免费</span>'
+      : `<span class="tag tag-paid">付费 ${esc(String(m.credits||'').replace(/\s*credits?/,''))}</span>`;
+    row.innerHTML = `<div class="model-name">${esc(m.name || m.id)} ${tag}</div>`
+      + (caps.length ? `<div class="model-cap">${caps.join(' · ')}</div>` : '')
+      + (usable ? '' : '<div class="model-cap" style="color:#f85149">当前不可用</div>');
+    if(usable){
+      if(curModel && curModel.id === m.id) row.classList.add('active');
+      row.onclick = ()=>{
+        curModel = m;
+        forceFree = false;
+        renderModelList();
+        setStatus('on', (m.name||m.id));
+      };
+    }
+    box.appendChild(row);
+  }
+}
+
+// 从云服务拉取模型列表（免密钥）
+async function loadModels(){
+  try{
+    setStatus('', '连接中…');
+    const models = await cloud.llm.models.list();
+    if(!models || models.length === 0){
+      MODELS = [];
+      setStatus('err','无可用模型');
+      return;
+    }
+    MODELS = models.filter(m => m.disabled !== true && isChatModel(m));
+    if(!MODELS.length){
+      setStatus('err','无可用模型');
+      return;
+    }
+
+    // 读取云端已用额度
+    await syncPaidUsage();
+
+    // 默认选最便宜的付费模型；已超限则直接给免费模型
+    if(paidUsed >= PAID_LIMIT){
+      forceFree = true;
+      curModel = pickFreeModel() || MODELS[0];
+    }else{
+      curModel = pickCheapestPaid() || pickFreeModel() || MODELS[0];
+    }
+    renderModelList();
+    setStatus('on', curModel.name || curModel.id);
+  }catch(e){
+    setStatus('err', '模型加载失败');
+    console.error(e);
+  }
+}
+
+// 同步云端已用次数到本地
+async function syncPaidUsage(){
+  const local = parseInt(localStorage.getItem(LOCAL_USED_STORE) || '0', 10);
+  paidUsed = Number.isFinite(local) ? local : 0;
+  try{
+    const { data, error } = await cloud.database.rpc('get_paid_usage', { p_device: deviceKey() });
+    if(error) throw error;
+    const n = typeof data === 'number' ? data : parseInt(data, 10);
+    if(Number.isFinite(n)){
+      // 云端是权威值，但取两者较大值防止绕过
+      paidUsed = Math.max(paidUsed, n);
+      localStorage.setItem(LOCAL_USED_STORE, String(paidUsed));
+    }
+  }catch(e){
+    console.warn('额度同步失败，用本地计数', e);
+  }
+}
+
+// ============ 输入框自适应高度 ============
+function autoGrow(){
+  const t = $('input');
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 150) + 'px';
+}
+
+// ============ 初始化 ============
+async function init(){
+  // 载入知识库
+  try{
+    const r = await fetch('data/knowledge.json');
+    KNOWLEDGE = await r.json();
+    renderSidebar();
+    renderQuick();
+  }catch(e){
+    $('sidebar').innerHTML = '<div style="padding:20px;color:#f85149;font-size:12px">知识库加载失败：' + esc(e.message) + '<br><br>请确认通过本地服务器打开（不是直接双击文件）。</div>';
+  }
+
+  // 初始化云服务客户端（免密钥，用户无需任何配置）
+  try{
+    if(typeof WorkBuddyCloud === 'undefined') throw new Error('云服务 SDK 未加载');
+    cloud = WorkBuddyCloud.createWorkBuddyCloud({
+      endpoint: PUBLIC_CONFIG.endpoint,
+      oauthRelayBaseUrl: PUBLIC_CONFIG.oauthRelayBaseUrl,
+      publishableKey: PUBLIC_CONFIG.publishableKey,
+    });
+    await loadModels();
+  }catch(e){
+    setStatus('err','初始化失败');
+    console.error(e);
+  }
+
+  // 事件
+  $('sendBtn').onclick = send;
+  $('input').addEventListener('keydown', e=>{
+    if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+  });
+  $('input').addEventListener('input', autoGrow);
+  $('cfgBtn').onclick = openCfg;
+  $('cfgClose').onclick = closeCfg;
+  $('cfgClose2').onclick = closeCfg;
+  $('statusPill').onclick = ()=>{ if(!cloud) init(); else loadModels(); };
+  $('cfgModal').onclick = e=>{ if(e.target === $('cfgModal')) closeCfg(); };
+}
+
+init();
+</script>
+</body>
+</html>
